@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funny Face English</title>
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            font-family: 'Comic Sans MS', cursive;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .face-area {
+            width: 200px;
+            height: 200px;
+            background: #FFF3E0;
+            border-radius: 50%;
+            margin: 20px auto;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .organ-emoji {
+            position: absolute;
+            font-size: 40px;
+            transition: transform 0.3s;
+        }
+
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .number-btn {
+            background: var(--primary);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 40px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+
+        .number-btn:active {
+            transform: scale(0.9);
+            background: var(--secondary);
+        }
+
+        .score {
+            font-size: 32px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin: 20px;
+        }
+
+        .question-box {
+            background: white;
+            border-radius: 30px;
+            padding: 15px 30px;
+            display: inline-block;
+            margin: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .correct-animation {
+            animation: bounce 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score">⭐ 得分: <span id="score">0</span></div>
+        
+        <div class="face-area" id="face">
+            <!-- 五官表情会动态插入 -->
+        </div>
+
+        <div class="question-box">
+            <h2 id="question"></h2>
+        </div>
+
+        <div class="number-pad" id="numbers">
+            <!-- 数字按钮由JavaScript生成 -->
+        </div>
+    </div>
+
+    <script>
+        const organs = [
+            { name: 'eyes', count: 2, emoji: '👀', position: { x: 40, y: 60 } },
+            { name: 'ears', count: 2, emoji: '👂', position: { x: 10, y: 100 }, rotate: -30 },
+            { name: 'nose', count: 1, emoji: '👃', position: { x: 80, y: 100 } },
+            { name: 'mouth', count: 1, emoji: '👄', position: { x: 60, y: 140 } },
+            { name: 'eyebrows', count: 2, emoji: '🤨', position: { x: 40, y: 40 } }
+        ];
+
+        let score = 0;
+        let currentOrgan;
+        const synth = window.speechSynthesis;
+
+        function createFace() {
+            const face = document.getElementById('face');
+            face.innerHTML = organs.map(organ => 
+                `<div class="organ-emoji" 
+                    style="left: ${organ.position.x}px; top: ${organ.position.y}px;
+                    transform: rotate(${organ.rotate || 0}deg)">
+                    ${organ.emoji}
+                </div>`
+            ).join('');
+        }
+
+        function generateQuestion() {
+            currentOrgan = organs[Math.floor(Math.random() * organs.length)];
+            document.getElementById('question').innerHTML = 
+                `How many ${currentOrgan.name} do you have?`;
+            speakQuestion();
+            createNumberPad();
+        }
+
+        function createNumberPad() {
+            const numbers = [1,2,3,4,5,10,20,32];
+            const shuffled = numbers.sort(() => Math.random() - 0.5);
+            document.getElementById('numbers').innerHTML = shuffled.map(num => 
+                `<button class="number-btn">${num}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.textContent)));
+            });
+        }
+
+        function speakQuestion() {
+            if (synth.speaking) synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(
+                `How many ${currentOrgan.name} do you have?`
+            );
+            utterance.rate = 0.9;
+            utterance.pitch = 1.2;
+            synth.speak(utterance);
+        }
+
+        function checkAnswer(answer) {
+            const face = document.getElementById('face');
+            if (answer === currentOrgan.count) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+                face.classList.add('correct-animation');
+                setTimeout(() => face.classList.remove('correct-animation'), 500);
+            } else {
+                face.style.transform = 'rotate(5deg)';
+                setTimeout(() => face.style.transform = 'rotate(-5deg)', 100);
+                setTimeout(() => face.style.transform = '', 200);
+            }
+            setTimeout(generateQuestion, 1000);
+        }
+
+        // 初始化游戏
+        window.onload = () => {
+            createFace();
+            generateQuestion();
+            
+            // 触摸设备优化
+            document.body.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+        };
+    </script>
+</body>
+</html>
